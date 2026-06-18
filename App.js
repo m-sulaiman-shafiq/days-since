@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import Welcome from "./Welcome";
+import styles from "./styles";
 import {
   SafeAreaView,
   View,
@@ -11,11 +13,13 @@ import {
   LogBox,
   Modal,
   KeyboardAvoidingView,
-  StyleSheet,
+  Keyboard,
+  Image,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
+import { Feather } from "@expo/vector-icons";
 
 const STORAGE_KEY = "days-since-items";
 const REMINDER_SECONDS = 10; // testing; real use: 7 * 24 * 60 * 60
@@ -96,6 +100,22 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [activeId, setActiveId] = useState(null); // item being marked done
   const [noteDraft, setNoteDraft] = useState("");
+  const [editing, setEditing] = useState(null); // { itemId, idx } being edited
+  const [kbHeight, setKbHeight] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [editDraft, setEditDraft] = useState("");
+
+  //too hide keyboard
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", (e) =>
+      setKbHeight(e.endCoordinates.height)
+    );
+    const hide = Keyboard.addListener("keyboardDidHide", () => setKbHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   // Load + migrate once.
   useEffect(() => {
@@ -205,17 +225,54 @@ export default function App() {
       },
     ]);
   }
+  function startEdit(itemId, idx, currentNote) {
+    setEditing({ itemId, idx });
+    setEditDraft(currentNote || "");
+  }
 
+  function saveEdit() {
+    if (!editing) return;
+    const { itemId, idx } = editing;
+    const note = editDraft.trim();
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === itemId
+          ? {
+              ...it,
+              history: it.history.map((e, i) =>
+                i === idx ? { ...e, note } : e
+              ),
+            }
+          : it
+      )
+    );
+    setEditing(null);
+    setEditDraft("");
+  }
+
+  function deleteEntry(itemId, idx) {
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === itemId
+          ? { ...it, history: it.history.filter((_, i) => i !== idx) }
+          : it
+      )
+    );
+  }
+  if (!ready) return <Welcome onDone={() => setReady(true)} />;
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar style="auto" />
-      <Text style={styles.heading}>Days Since</Text>
+      <View style={styles.header}>
+        <Text style={styles.heading}>Days Since</Text>
+        <Image source={require("./assets/logo.png")} style={styles.headerIcon} resizeMode="contain" />
+      </View>
       <Text style={styles.hint}>Long-press a card to delete it</Text>
 
       <View style={styles.addRow}>
         <TextInput
           style={styles.input}
-          placeholder="Add something to track…"
+          placeholder="+ Add New Task"
           value={draft}
           onChangeText={setDraft}
           onSubmitEditing={addItem}
@@ -227,6 +284,7 @@ export default function App() {
       </View>
 
       <FlatList
+        contentContainerStyle={{ paddingBottom: kbHeight + 40 }}
         data={items}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
@@ -254,28 +312,94 @@ export default function App() {
                   style={styles.button}
                   onPress={() => openEntry(item.id)}
                 >
-                  <Text style={styles.buttonText}>I did it today</Text>
+                  <Text style={styles.buttonText}>+ New entry</Text>
                 </Pressable>
               </View>
-
               {item.history.length > 0 && (
                 <View style={styles.history}>
-                  {item.history.map((entry, idx) => (
-                    <View key={idx} style={styles.entry}>
-                      <Text style={styles.entryDate}>
-                        {formatDate(entry.date)}
-                        {dayCounts[dayKey(entry.date)] > 1 ? (
-                          <Text style={styles.entryTime}>
-                            {" "}
-                            {formatTime(entry.date)}
+                  {item.history.map((entry, idx) => {
+                    const key = dayKey(entry.date);
+                    const prev = item.history[idx - 1];
+                    const isNewDay = !prev || dayKey(prev.date) !== key;
+                    const multiple = dayCounts[key] > 1;
+                    const isEditing =
+                      editing &&
+                      editing.itemId === item.id &&
+                      editing.idx === idx;
+                    return (
+                      <View key={idx} style={styles.entry}>
+                        {isNewDay && (
+                          <Text style={styles.entryDate}>
+                            {formatDate(entry.date)}
                           </Text>
-                        ) : null}
-                      </Text>
-                      {entry.note ? (
-                        <Text style={styles.entryNote}>{entry.note}</Text>
-                      ) : null}
-                    </View>
-                  ))}
+                        )}
+                        <View style={styles.entryRow}>
+                          {isEditing ? (
+                            <>
+                              <TextInput
+                                style={[styles.entryNote, styles.entryEdit]}
+                                value={editDraft}
+                                onChangeText={setEditDraft}
+                                autoFocus
+                                multiline
+                              />
+                              <Pressable
+                                onPress={saveEdit}
+                                hitSlop={8}
+                                style={styles.entryIcon}
+                              >
+                                <Feather
+                                  name="check"
+                                  size={16}
+                                  color="#34c759"
+                                />
+                              </Pressable>
+                            </>
+                          ) : (
+                            <>
+                              {entry.note && (
+                                <Text style={styles.entryNote}>
+                                  {entry.note}
+                                </Text>
+                              )}
+
+                              {multiple && entry.note ? (
+                                <Text style={styles.entryTime}>
+                                  {formatTime(entry.date)}
+                                </Text>
+                              ) : null}
+
+                              <Pressable
+                                onPress={() =>
+                                  startEdit(item.id, idx, entry.note)
+                                }
+                                hitSlop={8}
+                                style={styles.entryIcon}
+                              >
+                                <Feather
+                                  name="edit-2"
+                                  size={14}
+                                  color="#c7c7cc"
+                                />
+                              </Pressable>
+
+                              <Pressable
+                                onPress={() => deleteEntry(item.id, idx)}
+                                hitSlop={8}
+                                style={styles.entryIcon}
+                              >
+                                <Feather
+                                  name="trash-2"
+                                  size={14}
+                                  color="#c7c7cc"
+                                />
+                              </Pressable>
+                            </>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               )}
             </Pressable>
@@ -298,7 +422,7 @@ export default function App() {
             <Text style={styles.modalSub}>Where did you get to?</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="e.g. Surah Al-Baqarah, Ayah 142 (optional)"
+              placeholder="e.g. Car EMI, tyre change, etc"
               value={noteDraft}
               onChangeText={setNoteDraft}
               multiline
@@ -324,92 +448,3 @@ export default function App() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#f2f2f7", paddingHorizontal: 16 },
-  heading: { fontSize: 28, fontWeight: "600", marginTop: 50 },
-  hint: { fontSize: 13, color: "#8e8e93", marginBottom: 16 },
-  addRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
-  input: {
-    flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-  addButton: {
-    backgroundColor: "#34c759",
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    justifyContent: "center",
-  },
-  addButtonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  cardText: { flex: 1, marginRight: 12 },
-  name: { fontSize: 17, fontWeight: "500", marginBottom: 4 },
-  days: { fontSize: 12, color: "#8e8e93" },
-  button: {
-    backgroundColor: "#007aff",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  buttonText: { color: "#fff", fontWeight: "600", fontSize: 14 },
-
-  history: {
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#f2f2f7",
-    paddingTop: 8,
-  },
-  entry: { paddingVertical: 4 },
-  entryDate: { fontSize: 13, fontWeight: "600", color: "#3a3a3c" },
-  entryNote: { fontSize: 14, color: "#636366", marginTop: 1 },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "flex-end",
-  },
-  modalCard: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 32,
-  },
-  modalTitle: { fontSize: 20, fontWeight: "600" },
-  modalSub: { fontSize: 14, color: "#8e8e93", marginTop: 2, marginBottom: 12 },
-  modalInput: {
-    backgroundColor: "#f2f2f7",
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-    minHeight: 80,
-    textAlignVertical: "top",
-  },
-  modalButtons: { flexDirection: "row", gap: 12, marginTop: 16 },
-  modalBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  cancelBtn: { backgroundColor: "#e5e5ea" },
-  cancelBtnText: { fontSize: 16, fontWeight: "600", color: "#3a3a3c" },
-  saveBtn: { backgroundColor: "#007aff" },
-  saveBtnText: { fontSize: 16, fontWeight: "600", color: "#fff" },
-  entryTime: { color: "#8e8e93", fontWeight: "400", fontSize: 10, paddingVertical: 6, marginBottom: 4 }
-});
