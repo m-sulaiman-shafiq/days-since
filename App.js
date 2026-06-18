@@ -108,7 +108,7 @@ export default function App() {
   //too hide keyboard
   useEffect(() => {
     const show = Keyboard.addListener("keyboardDidShow", (e) =>
-      setKbHeight(e.endCoordinates.height)
+      setKbHeight(e.endCoordinates.height),
     );
     const hide = Keyboard.addListener("keyboardDidHide", () => setKbHeight(0));
     return () => {
@@ -172,7 +172,7 @@ export default function App() {
     try {
       if (activeItem?.notifId) {
         await Notifications.cancelScheduledNotificationAsync(
-          activeItem.notifId
+          activeItem.notifId,
         );
       }
       notifId = await Notifications.scheduleNotificationAsync({
@@ -193,8 +193,8 @@ export default function App() {
       prev.map((it) =>
         it.id === activeId
           ? { ...it, history: [entry, ...it.history], notifId }
-          : it
-      )
+          : it,
+      ),
     );
     cancelEntry();
   }
@@ -217,7 +217,7 @@ export default function App() {
         onPress: () => {
           if (target?.notifId) {
             Notifications.cancelScheduledNotificationAsync(
-              target.notifId
+              target.notifId,
             ).catch(() => {});
           }
           setItems((prev) => prev.filter((it) => it.id !== id));
@@ -240,11 +240,11 @@ export default function App() {
           ? {
               ...it,
               history: it.history.map((e, i) =>
-                i === idx ? { ...e, note } : e
+                i === idx ? { ...e, note } : e,
               ),
             }
-          : it
-      )
+          : it,
+      ),
     );
     setEditing(null);
     setEditDraft("");
@@ -255,8 +255,8 @@ export default function App() {
       prev.map((it) =>
         it.id === itemId
           ? { ...it, history: it.history.filter((_, i) => i !== idx) }
-          : it
-      )
+          : it,
+      ),
     );
   }
   if (!ready) return <Welcome onDone={() => setReady(true)} />;
@@ -264,10 +264,18 @@ export default function App() {
     <SafeAreaView style={styles.screen}>
       <StatusBar style="auto" />
       <View style={styles.header}>
-        <Text style={styles.heading}>Days Since</Text>
-        <Image source={require("./assets/logo.png")} style={styles.headerIcon} resizeMode="contain" />
+        <View>
+          <Text style={styles.heading}>Days Since</Text>
+          <Text style={styles.hint}>Long-press a card to delete it</Text>
+        </View>
+        <View>
+          <Image
+            source={require("./assets/logo.png")}
+            style={styles.headerIcon}
+            resizeMode="contain"
+          />
+        </View>
       </View>
-      <Text style={styles.hint}>Long-press a card to delete it</Text>
 
       <View style={styles.addRow}>
         <TextInput
@@ -368,32 +376,34 @@ export default function App() {
                                   {formatTime(entry.date)}
                                 </Text>
                               ) : null}
-
-                              <Pressable
-                                onPress={() =>
-                                  startEdit(item.id, idx, entry.note)
-                                }
-                                hitSlop={8}
-                                style={styles.entryIcon}
-                              >
-                                <Feather
-                                  name="edit-2"
-                                  size={14}
-                                  color="#c7c7cc"
-                                />
-                              </Pressable>
-
-                              <Pressable
-                                onPress={() => deleteEntry(item.id, idx)}
-                                hitSlop={8}
-                                style={styles.entryIcon}
-                              >
-                                <Feather
-                                  name="trash-2"
-                                  size={14}
-                                  color="#c7c7cc"
-                                />
-                              </Pressable>
+                              {entry.note && (
+                                <Pressable
+                                  onPress={() =>
+                                    startEdit(item.id, idx, entry.note)
+                                  }
+                                  hitSlop={8}
+                                  style={styles.entryIcon}
+                                >
+                                  <Feather
+                                    name="edit-2"
+                                    size={14}
+                                    color="#c7c7cc"
+                                  />
+                                </Pressable>
+                              )}
+                              {entry.note && (
+                                <Pressable
+                                  onPress={() => deleteEntry(item.id, idx)}
+                                  hitSlop={8}
+                                  style={styles.entryIcon}
+                                >
+                                  <Feather
+                                    name="trash-2"
+                                    size={14}
+                                    color="#c7c7cc"
+                                  />
+                                </Pressable>
+                              )}
                             </>
                           )}
                         </View>

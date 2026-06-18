@@ -2,10 +2,25 @@ import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#f2f2f7", paddingHorizontal: 16 },
-  heading: { fontSize: 28, fontWeight: "600", marginTop: 50 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 4 },
-  headerIcon: { width: 82, height: 82, paddingTop: 30},
-  hint: { fontSize: 13, color: "#8e8e93", marginBottom: 16 },
+  heading: {
+    fontSize: 28,
+    fontWeight: "600",
+    marginTop: 0,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 46,
+    marginBottom: 16,
+  },
+
+  headerIcon: { width: 62, height: 62 },
+  hint: {
+    fontSize: 13,
+    color: "#8e8e93",
+    marginTop: 4,
+  },
   addRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
   input: {
     flex: 1,
