@@ -1,3 +1,6 @@
+import { Text, View } from "react-native";
+import styles from "../styles";
+
 export function EmptyComponent() {
     return (
       <View style={styles.emptyContainer}>

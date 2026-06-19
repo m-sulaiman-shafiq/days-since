@@ -20,7 +20,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
-import { emptyComponentFn } from "./utils";
 import { EmptyComponent } from "./components/EmptyComponent";
 
 const STORAGE_KEY = "days-since-items";
@@ -362,6 +361,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar style="auto" />
+      {/* header code */}
       <View style={styles.header}>
         <View>
           <Text style={styles.heading}>Days Since</Text>
@@ -375,7 +375,7 @@ export default function App() {
           />
         </View>
       </View>
-
+      {/*new Task bar */}
       <View style={styles.addRow}>
         <TextInput
           style={styles.input}
@@ -389,11 +389,11 @@ export default function App() {
           <Text style={styles.addButtonText}>Add</Text>
         </Pressable>
       </View>
-
+    {/* Card section */}
       <FlatList
         contentContainerStyle={{ paddingBottom: kbHeight + 40 }}
         data={items}
-        ListEmptyComponent={<EmptyComponent/>}
+        ListEmptyComponent={<EmptyComponent />}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
           const last = item.history[0];
@@ -409,7 +409,7 @@ export default function App() {
             >
               <View style={styles.cardTop}>
                 <View style={styles.cardText}>
-                  <Text style={styles.name}>{item.name}</Text>
+                  <Text style={styles.taskName}>{item.name}</Text>
                   <Text style={styles.days}>
                     {last
                       ? `${daysSince(last.date)} days ago`

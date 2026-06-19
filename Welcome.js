@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
-import { Animated, View, StyleSheet, Easing } from "react-native";
+import { Animated, Easing } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import styles from "./styles";
 
 export default function Welcome({ onDone }) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -48,17 +50,17 @@ export default function Welcome({ onDone }) {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={["#EAF7EE", "#BBE7C9", "#74CB91"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={styles.container}
+    >
       <Animated.Image
         source={require("./assets/logo.png")}
         style={[styles.logo, { opacity, transform: [{ scale }] }]}
         resizeMode="contain"
       />
-    </View>
+    </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" },
-  logo: { width: 160, height: 160 },
-});

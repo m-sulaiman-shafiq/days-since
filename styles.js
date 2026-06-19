@@ -49,8 +49,8 @@ export default StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  cardText: { flex: 1, marginRight: 12 },
-  name: { fontSize: 17, fontWeight: "500", marginBottom: 4 },
+  cardText: { flex: 1, marginRight: 12},
+  taskName: { fontSize: 17, fontWeight: "500", marginBottom: 4, color: "#34c759" },
   days: { fontSize: 12, color: "#8e8e93" },
   button: {
     backgroundColor: "#007aff",
@@ -149,19 +149,19 @@ export default StyleSheet.create({
     paddingTop: 40,
     alignItems: "center",
   },
-  
+
   emptyEmoji: {
     fontSize: 54,
     marginBottom: 16,
   },
-  
+
   emptyTitle: {
     fontSize: 24,
     fontWeight: "700",
     color: "#1c1c1e",
     marginBottom: 8,
   },
-  
+
   emptySubtitle: {
     fontSize: 15,
     color: "#8e8e93",
@@ -169,28 +169,31 @@ export default StyleSheet.create({
     lineHeight: 22,
     marginBottom: 28,
   },
-  
+
   suggestionCard: {
     width: "100%",
     borderRadius: 16,
     paddingLeft: 90,
     textAlign: "center",
   },
-  
+
   suggestionRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 4,
     color: "#8e8e93",
   },
-  
+
   suggestionEmoji: {
     fontSize: 22,
     marginRight: 14,
   },
-  
+
   suggestionText: {
     fontSize: 16,
     color: "#8e8e93",
   },
+  //Welcome screen styles
+  container: { flex: 1, alignItems: "center", justifyContent: "center" },
+  logo: { width: 160, height: 160 },
 });
