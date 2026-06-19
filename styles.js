@@ -5,7 +5,7 @@ export default StyleSheet.create({
   heading: {
     fontSize: 28,
     fontWeight: "600",
-    marginTop: 0,
+    marginTop: 10,
   },
   header: {
     flexDirection: "row",
@@ -71,7 +71,7 @@ export default StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#3a3a3c",
-    paddingBottom: 8,
+    paddingTop: 8,
   },
   entryNote: { fontSize: 16, color: "#636366", flex: 1 },
   entryRow: { flexDirection: "row", alignItems: "baseline" },
@@ -121,5 +121,76 @@ export default StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#007aff",
     paddingVertical: 0,
+  },
+  //bell notificaiton styles
+  bell: { marginRight: 12 },
+  reminderInput: {
+    backgroundColor: "#f2f2f7",
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  unitGroup: { flexDirection: "row", gap: 8 },
+  unitBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: "#f2f2f7",
+    alignItems: "center",
+  },
+  unitBtnActive: { backgroundColor: "#2E9E3F" },
+  unitText: { fontSize: 15, color: "#3a3a3c", textTransform: "capitalize" },
+  unitTextActive: { color: "#fff", fontWeight: "600" },
+
+  //empty container styles
+  emptyContainer: {
+    paddingTop: 40,
+    alignItems: "center",
+  },
+  
+  emptyEmoji: {
+    fontSize: 54,
+    marginBottom: 16,
+  },
+  
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#1c1c1e",
+    marginBottom: 8,
+  },
+  
+  emptySubtitle: {
+    fontSize: 15,
+    color: "#8e8e93",
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  
+  suggestionCard: {
+    width: "100%",
+    borderRadius: 16,
+    paddingLeft: 90,
+    textAlign: "center",
+  },
+  
+  suggestionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+    color: "#8e8e93",
+  },
+  
+  suggestionEmoji: {
+    fontSize: 22,
+    marginRight: 14,
+  },
+  
+  suggestionText: {
+    fontSize: 16,
+    color: "#8e8e93",
   },
 });

@@ -19,10 +19,11 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { emptyComponentFn } from "./utils";
+import { EmptyComponent } from "./components/EmptyComponent";
 
 const STORAGE_KEY = "days-since-items";
-const REMINDER_SECONDS = 10; // testing; real use: 7 * 24 * 60 * 60
 
 LogBox.ignoreLogs(["Android Push notifications"]);
 
@@ -104,11 +105,14 @@ export default function App() {
   const [kbHeight, setKbHeight] = useState(0);
   const [ready, setReady] = useState(false);
   const [editDraft, setEditDraft] = useState("");
+  const [reminderId, setReminderId] = useState(null);
+  const [reminderValue, setReminderValue] = useState("1");
+  const [reminderUnit, setReminderUnit] = useState("days");
 
   //too hide keyboard
   useEffect(() => {
     const show = Keyboard.addListener("keyboardDidShow", (e) =>
-      setKbHeight(e.endCoordinates.height),
+      setKbHeight(e.endCoordinates.height)
     );
     const hide = Keyboard.addListener("keyboardDidHide", () => setKbHeight(0));
     return () => {
@@ -116,6 +120,24 @@ export default function App() {
       hide.remove();
     };
   }, []);
+
+  //for notifications
+  useEffect(() => {
+    if (!loaded) return;
+    (async () => {
+      const done = await AsyncStorage.getItem("notif-reset-v1").catch(
+        () => null
+      );
+      if (done) return;
+      await Notifications.cancelAllScheduledNotificationsAsync().catch(
+        () => {}
+      );
+      setItems((prev) =>
+        prev.map((it) => ({ ...it, notifId: null, reminder: null }))
+      );
+      await AsyncStorage.setItem("notif-reset-v1", "1").catch(() => {});
+    })();
+  }, [loaded]);
 
   // Load + migrate once.
   useEffect(() => {
@@ -164,37 +186,12 @@ export default function App() {
     setNoteDraft("");
   }
 
-  async function saveEntry() {
+  function saveEntry() {
     const entry = { date: new Date().toISOString(), note: noteDraft.trim() };
-
-    // Reschedule this item's reminder.
-    let notifId = activeItem?.notifId;
-    try {
-      if (activeItem?.notifId) {
-        await Notifications.cancelScheduledNotificationAsync(
-          activeItem.notifId,
-        );
-      }
-      notifId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Days Since",
-          body: `Time for "${activeItem.name}" again?`,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: REMINDER_SECONDS,
-        },
-      });
-    } catch (e) {
-      /* ignore scheduling errors */
-    }
-
     setItems((prev) =>
       prev.map((it) =>
-        it.id === activeId
-          ? { ...it, history: [entry, ...it.history], notifId }
-          : it,
-      ),
+        it.id === activeId ? { ...it, history: [entry, ...it.history] } : it
+      )
     );
     cancelEntry();
   }
@@ -209,21 +206,26 @@ export default function App() {
 
   function deleteItem(id) {
     const target = items.find((i) => i.id === id);
-    Alert.alert("Delete?", `Remove "${target?.name}"?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          if (target?.notifId) {
-            Notifications.cancelScheduledNotificationAsync(
-              target.notifId,
-            ).catch(() => {});
-          }
-          setItems((prev) => prev.filter((it) => it.id !== id));
+    Alert.alert(
+      "Delete?",
+      `Remove "${target?.name}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            if (target?.notifId) {
+              Notifications.cancelScheduledNotificationAsync(
+                target.notifId
+              ).catch(() => {});
+            }
+            setItems((prev) => prev.filter((it) => it.id !== id));
+          },
         },
-      },
-    ]);
+      ],
+      { cancelable: true }
+    );
   }
   function startEdit(itemId, idx, currentNote) {
     setEditing({ itemId, idx });
@@ -240,11 +242,11 @@ export default function App() {
           ? {
               ...it,
               history: it.history.map((e, i) =>
-                i === idx ? { ...e, note } : e,
+                i === idx ? { ...e, note } : e
               ),
             }
-          : it,
-      ),
+          : it
+      )
     );
     setEditing(null);
     setEditDraft("");
@@ -255,10 +257,107 @@ export default function App() {
       prev.map((it) =>
         it.id === itemId
           ? { ...it, history: it.history.filter((_, i) => i !== idx) }
-          : it,
-      ),
+          : it
+      )
     );
   }
+
+  function deleteEntry(itemId, idx) {
+    const item = items.find((i) => i.id === itemId);
+    const note = item?.history[idx]?.note;
+    Alert.alert(
+      "Delete this entry?",
+      note ? `"${note}" will be removed.` : "This entry will be removed.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () =>
+            setItems((prev) =>
+              prev.map((it) =>
+                it.id === itemId
+                  ? { ...it, history: it.history.filter((_, i) => i !== idx) }
+                  : it
+              )
+            ),
+        },
+      ],
+      { cancelable: true }
+    );
+  }
+
+  //notification functions
+  function onBellPress(item) {
+    if (item.notifId) {
+      cancelReminder(item.id); // already on -> tap turns it off
+    } else {
+      setReminderId(item.id); // off -> open the popup
+      setReminderValue("1");
+      setReminderUnit("days");
+    }
+  }
+
+  async function cancelReminder(itemId) {
+    const item = items.find((i) => i.id === itemId);
+    if (item?.notifId) {
+      await Notifications.cancelScheduledNotificationAsync(item.notifId).catch(
+        () => {}
+      );
+    }
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === itemId ? { ...it, notifId: null, reminder: null } : it
+      )
+    );
+  }
+
+  async function saveReminder() {
+    const item = items.find((i) => i.id === reminderId);
+    if (!item) return;
+    const n = parseInt(reminderValue, 10);
+    if (!n || n < 1) return;
+
+    let perm = await Notifications.getPermissionsAsync();
+    if (!perm.granted) perm = await Notifications.requestPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        "Notifications off",
+        "Enable notifications in Settings to get reminders."
+      );
+      return;
+    }
+
+    const mult =
+      reminderUnit === "hours"
+        ? 3600
+        : reminderUnit === "weeks"
+        ? 604800
+        : 86400;
+    if (item.notifId) {
+      await Notifications.cancelScheduledNotificationAsync(item.notifId).catch(
+        () => {}
+      );
+    }
+    const notifId = await Notifications.scheduleNotificationAsync({
+      content: { title: item.name, body: "Time for a check-in." },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: n * mult,
+        repeats: true,
+      },
+    });
+
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === reminderId
+          ? { ...it, notifId, reminder: { value: n, unit: reminderUnit } }
+          : it
+      )
+    );
+    setReminderId(null);
+  }
+
   if (!ready) return <Welcome onDone={() => setReady(true)} />;
   return (
     <SafeAreaView style={styles.screen}>
@@ -294,6 +393,7 @@ export default function App() {
       <FlatList
         contentContainerStyle={{ paddingBottom: kbHeight + 40 }}
         data={items}
+        ListEmptyComponent={<EmptyComponent/>}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
           const last = item.history[0];
@@ -316,6 +416,17 @@ export default function App() {
                       : "No entries yet"}
                   </Text>
                 </View>
+                <Pressable
+                  onPress={() => onBellPress(item)}
+                  hitSlop={8}
+                  style={styles.bell}
+                >
+                  <MaterialCommunityIcons
+                    name={item.notifId ? "bell-ring" : "bell-outline"}
+                    size={22}
+                    color={item.notifId ? "#2E9E3F" : "#8e8e93"}
+                  />
+                </Pressable>
                 <Pressable
                   style={styles.button}
                   onPress={() => openEntry(item.id)}
@@ -429,10 +540,11 @@ export default function App() {
         >
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>{activeItem?.name}</Text>
-            <Text style={styles.modalSub}>Where did you get to?</Text>
+            <Text style={styles.modalSub}>
+              Description of what you've just done
+            </Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="e.g. Car EMI, tyre change, etc"
               value={noteDraft}
               onChangeText={setNoteDraft}
               multiline
@@ -448,6 +560,64 @@ export default function App() {
               <Pressable
                 style={[styles.modalBtn, styles.saveBtn]}
                 onPress={saveEntry}
+              >
+                <Text style={styles.saveBtnText}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+      <Modal
+        visible={reminderId !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setReminderId(null)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Remind me</Text>
+            <Text style={styles.modalSub}>Notify me every…</Text>
+            <TextInput
+              style={styles.reminderInput}
+              value={reminderValue}
+              onChangeText={(t) => setReminderValue(t.replace(/[^0-9]/g, ""))}
+              keyboardType="number-pad"
+              maxLength={3}
+            />
+            <View style={styles.unitGroup}>
+              {["hours", "days", "weeks"].map((u) => (
+                <Pressable
+                  key={u}
+                  onPress={() => setReminderUnit(u)}
+                  style={[
+                    styles.unitBtn,
+                    reminderUnit === u && styles.unitBtnActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.unitText,
+                      reminderUnit === u && styles.unitTextActive,
+                    ]}
+                  >
+                    {u}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={styles.modalButtons}>
+              <Pressable
+                style={[styles.modalBtn, styles.cancelBtn]}
+                onPress={() => setReminderId(null)}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalBtn, styles.saveBtn]}
+                onPress={saveReminder}
               >
                 <Text style={styles.saveBtnText}>Save</Text>
               </Pressable>
