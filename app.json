@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "DaysSince",
+    "name": "Days Since",
     "slug": "days-since",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -26,6 +26,15 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#2E9E3F"
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "6523a1af-032b-4120-a7dc-05e58f36838d"
