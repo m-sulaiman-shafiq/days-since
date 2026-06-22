@@ -1,8 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import Welcome from "./Welcome";
 import styles from "./styles";
 import {
-  SafeAreaView,
   View,
   Text,
   FlatList,
@@ -12,7 +15,6 @@ import {
   Platform,
   LogBox,
   Modal,
-  KeyboardAvoidingView,
   Keyboard,
   Image,
 } from "react-native";
@@ -73,28 +75,15 @@ function normalize(item) {
   };
 }
 
-const SEED = [
-  {
-    id: "1",
-    name: "Quran reading",
-    history: [
-      { date: "2026-06-15", note: "Surah Al-Baqarah, Ayah 142" },
-      { date: "2026-06-10", note: "Surah Al-Baqarah, Ayah 88" },
-    ],
-  },
-  {
-    id: "2",
-    name: "Motorcycle oil change",
-    history: [{ date: "2026-05-20", note: "" }],
-  },
-  {
-    id: "3",
-    name: "Backed up laptop",
-    history: [{ date: "2026-04-30", note: "Full backup to external drive" }],
-  },
-];
-
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <Main />
+    </SafeAreaProvider>
+  );
+}
+
+function Main() {
   const [items, setItems] = useState([]);
   const [draft, setDraft] = useState("");
   const [loaded, setLoaded] = useState(false);
@@ -107,6 +96,9 @@ export default function App() {
   const [reminderId, setReminderId] = useState(null);
   const [reminderValue, setReminderValue] = useState("1");
   const [reminderUnit, setReminderUnit] = useState("days");
+
+  const insets = useSafeAreaInsets();
+  const listRef = useRef(null);
 
   //too hide keyboard
   useEffect(() => {
@@ -143,10 +135,10 @@ export default function App() {
     (async () => {
       try {
         const json = await AsyncStorage.getItem(STORAGE_KEY);
-        const raw = json != null ? JSON.parse(json) : SEED;
+        const raw = json != null ? JSON.parse(json) : [];
         setItems(raw.map(normalize));
       } catch (e) {
-        setItems(SEED);
+        setItems([]);
       } finally {
         setLoaded(true);
       }
@@ -229,6 +221,16 @@ export default function App() {
   function startEdit(itemId, idx, currentNote) {
     setEditing({ itemId, idx });
     setEditDraft(currentNote || "");
+    const itemIndex = items.findIndex((i) => i.id === itemId);
+    if (itemIndex >= 0) {
+      setTimeout(() => {
+        listRef.current?.scrollToIndex({
+          index: itemIndex,
+          animated: true,
+          viewPosition: 0.2,
+        });
+      }, 100);
+    }
   }
 
   function saveEdit() {
@@ -249,16 +251,6 @@ export default function App() {
     );
     setEditing(null);
     setEditDraft("");
-  }
-
-  function deleteEntry(itemId, idx) {
-    setItems((prev) =>
-      prev.map((it) =>
-        it.id === itemId
-          ? { ...it, history: it.history.filter((_, i) => i !== idx) }
-          : it
-      )
-    );
   }
 
   function deleteEntry(itemId, idx) {
@@ -359,7 +351,7 @@ export default function App() {
 
   if (!ready) return <Welcome onDone={() => setReady(true)} />;
   return (
-    <SafeAreaView style={styles.screen}>
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
       <StatusBar style="auto" />
       {/* header code */}
       <View style={styles.header}>
@@ -389,9 +381,19 @@ export default function App() {
           <Text style={styles.addButtonText}>Add</Text>
         </Pressable>
       </View>
-    {/* Card section */}
+      {/* Card section */}
       <FlatList
-        contentContainerStyle={{ paddingBottom: kbHeight + 40 }}
+        ref={listRef}
+        onScrollToIndexFailed={(info) => {
+          setTimeout(() => {
+            listRef.current?.scrollToIndex({
+              index: info.index,
+              animated: true,
+              viewPosition: 0.2,
+            });
+          }, 250);
+        }}
+        contentContainerStyle={{ paddingBottom: kbHeight + insets.bottom + 12 }}
         data={items}
         ListEmptyComponent={<EmptyComponent />}
         keyExtractor={(item) => item.id}
@@ -527,18 +529,20 @@ export default function App() {
           );
         }}
       />
-
+      {/* add entry modal */}
       <Modal
         visible={activeId !== null}
         transparent
         animationType="slide"
         onRequestClose={cancelEntry}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalCard}>
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalCard,
+              { paddingBottom: kbHeight + insets.bottom + 16 },
+            ]}
+          >
             <Text style={styles.modalTitle}>{activeItem?.name}</Text>
             <Text style={styles.modalSub}>
               Description of what you've just done
@@ -565,19 +569,22 @@ export default function App() {
               </Pressable>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
+      {/* remind me modal */}
       <Modal
         visible={reminderId !== null}
         transparent
         animationType="slide"
         onRequestClose={() => setReminderId(null)}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalCard}>
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalCard,
+              { paddingBottom: kbHeight + insets.bottom + 16 },
+            ]}
+          >
             <Text style={styles.modalTitle}>Remind me</Text>
             <Text style={styles.modalSub}>Notify me every…</Text>
             <TextInput
@@ -623,8 +630,8 @@ export default function App() {
               </Pressable>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

@@ -1,10 +1,10 @@
 {
   "expo": {
     "name": "DaysSince",
-    "slug": "DaysSince",
+    "slug": "days-since",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -16,15 +16,20 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.sulaiman.dayssince",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.DaysSince"
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6523a1af-032b-4120-a7dc-05e58f36838d"
+      }
     }
   }
 }

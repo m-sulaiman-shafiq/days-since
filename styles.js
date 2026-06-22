@@ -11,7 +11,7 @@ export default StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 46,
+    marginTop: 20,
     marginBottom: 16,
   },
 
