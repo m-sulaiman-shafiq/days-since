@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import Welcome from "./Welcome";
 import styles from "../styles";
 import {
   View,
@@ -25,6 +24,7 @@ import { EmptyComponent } from "../components/EmptyComponent";
 
 import { daysSince, formatDate, formatTime, dayKey } from "../utils/dates";
 import { STORAGE_KEY, normalize } from "../utils/storage";
+import Welcome from "./Welcome";
 
 LogBox.ignoreLogs(["Android Push notifications"]);
 

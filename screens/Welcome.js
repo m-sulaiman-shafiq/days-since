@@ -57,7 +57,7 @@ export default function Welcome({ onDone }) {
       style={styles.container}
     >
       <Animated.Image
-        source={require("./assets/logo.png")}
+        source={require("../assets/logo.png")}
         style={[styles.logo, { opacity, transform: [{ scale }] }]}
         resizeMode="contain"
       />
