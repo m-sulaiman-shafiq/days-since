@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Animated, Easing } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import styles from "./styles";
+import styles from "../styles";
 
 export default function Welcome({ onDone }) {
   const opacity = useRef(new Animated.Value(0)).current;
